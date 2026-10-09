@@ -1,0 +1,16 @@
+{
+  "permission": {
+    "bash": {
+      "git commit": "allow",
+      "git commit *": "allow",
+      "git push": "allow",
+      "git push *": "allow",
+      "gh pr create *": "allow",
+      "git push --force*": "ask",
+      "git push -f*": "ask",
+      "git push * --force*": "ask",
+      "git push * -f*": "ask"
+    }
+  },
+  "$schema": "https://opencode.ai/config.json"
+}
