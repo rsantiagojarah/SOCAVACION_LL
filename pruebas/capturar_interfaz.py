@@ -27,15 +27,13 @@ def principal():
     ventana.pagina_ingreso.cargar(proyecto_ejemplo())
     ventana.controlador.calcular()
     ventana.show()
-    for ancho, alto, nombre in ((1480, 820, "normal"), (1000, 640, "minimo")):
+    for ancho, alto, nombre in ((1600, 900, "normal"), (1360, 720, "minimo")):
         ventana.resize(ancho, alto)
-        for indice in range(4):
-            ventana.navegacion.setCurrentRow(indice)
-            aplicacion.processEvents()
-            ruta = destino / f"{nombre}_fase_{indice + 1}.png"
-            if not ventana.grab().save(str(ruta)):
-                raise RuntimeError(f"No se pudo guardar la captura: {ruta}")
-            print(ruta)
+        aplicacion.processEvents()
+        ruta = destino / f"{nombre}.png"
+        if not ventana.grab().save(str(ruta)):
+            raise RuntimeError(f"No se pudo guardar la captura: {ruta}")
+        print(ruta)
     ventana.sesion.modificado = False
     ventana.close()
 

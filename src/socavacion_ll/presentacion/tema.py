@@ -12,21 +12,20 @@ QLabel#marca {{ color: #f0f2f5; font-size: 14px; font-weight: 600; }}
 QLabel#metadato {{ color: #788493; font-size: 8px; }}
 QLabel#titulo {{ font-size: 16px; font-weight: 600; color: #edf2f7; }}
 QLabel#subtitulo {{ color: {c.SECUNDARIO}; }}
-QLabel#aviso {{ color: {c.ADVERTENCIA}; padding: 8px; background: #342624;
+QLabel#aviso {{ color: {c.ADVERTENCIA}; padding: 4px 6px; background: #342624;
     border: 1px solid #594439; border-radius: 3px; }}
 QLabel#etiquetaFase {{ color: {c.ACENTO}; font-weight: 600; }}
-QLabel#grupo {{ color: {c.SECUNDARIO}; font-weight: 600; padding: 5px 0; }}
+QLabel#grupo {{ color: {c.SECUNDARIO}; font-weight: 600; padding: 0; }}
 QLabel#estadoVacio {{ color: {c.SECUNDARIO}; font-size: 13px; padding: 20px; }}
 QToolBar {{ background: {c.PANEL}; border: 0; border-bottom: 1px solid #29313b; }}
 QToolBar#cabecera {{ background: #10141a; padding: 0; spacing: 0; }}
 QToolBar#acciones {{ padding: 0 7px; spacing: 1px; }}
 QToolBar::separator {{ background: {c.BORDE}; width: 1px; margin: 4px 5px; }}
-QLineEdit {{ background: {c.ENTRADA}; color: #edf2f7; border: 1px solid {c.BORDE};
-    border-radius: 5px; padding: 6px 9px; selection-background-color: #365266; }}
+QLineEdit, QComboBox, QSpinBox, QPlainTextEdit {{
+    background: {c.ENTRADA}; color: #edf2f7; border: 1px solid {c.BORDE};
+    border-radius: 3px; padding: 2px 6px; selection-background-color: #365266; }}
 QLineEdit:focus {{ border-color: {c.ACENTO}; }}
-QLineEdit#pestanaProyecto {{ background: {c.CABECERA}; font-weight: 600;
-    border: 1px solid #2c3440; border-bottom: 2px solid {c.ACENTO};
-    border-radius: 0; padding: 0 12px; }}
+QLabel#pestanaProyecto {{ color: #edf2f7; font-weight: 600; padding: 0 8px; }}
 QWidget#banda {{ background: #14181e; border-bottom: 1px solid #252d37; }}
 QWidget#lateral {{ background: {c.SUPERFICIE}; }}
 QFrame#tarjeta {{ background: {c.SUPERFICIE}; border: 1px solid {c.BORDE}; }}
@@ -42,7 +41,7 @@ QTableWidget {{ background: {c.SUPERFICIE}; alternate-background-color: {c.PANEL
     color: {c.TEXTO}; gridline-color: #29313b; border: 1px solid {c.BORDE};
     selection-background-color: {c.SELECCION}; selection-color: #edf2f7; }}
 QHeaderView::section {{ background: {c.CABECERA}; color: {c.SECUNDARIO};
-    padding: 7px 10px; border: 0; border-bottom: 1px solid {c.BORDE}; }}
+    padding: 3px 6px; border: 0; border-bottom: 1px solid {c.BORDE}; }}
 QTableCornerButton::section {{ background: {c.CABECERA}; border: 0; }}
 QScrollArea {{ border: 0; background: {c.FONDO}; }}
 QWidget#contenidoPagina {{ background: {c.FONDO}; }}

@@ -2,8 +2,7 @@
 from PySide6.QtCore import QRect, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtWidgets import (
-    QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QToolBar, QToolButton,
-    QWidget, QWidgetAction,
+    QLabel, QToolBar, QToolButton, QWidgetAction,
 )
 
 from .colores import ACENTO, FUENTE
@@ -76,40 +75,17 @@ class AccionPlana(QWidgetAction):
         return None
 
 
-def crear_cabecera(ventana):
-    barra = QToolBar("Proyecto", ventana)
-    barra.setObjectName("cabecera")
-    barra.setMovable(False)
-    barra.setFixedHeight(34)
-    cuerpo = QWidget()
-    cuerpo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-    distribucion = QHBoxLayout(cuerpo)
-    distribucion.setContentsMargins(9, 0, 9, 0)
-    marca = QLabel(f"<span style='color:{ACENTO}'>≋</span>  Socavación")
-    marca.setObjectName("marca")
-    marca.setFixedWidth(128)
-    distribucion.addWidget(marca)
-    proyecto = QLineEdit("Nuevo proyecto")
-    ventana.titulo_proyecto = proyecto
-    proyecto.setObjectName("pestanaProyecto")
-    proyecto.setAccessibleName("Proyecto actual")
-    proyecto.setReadOnly(True)
-    proyecto.setFixedSize(300, 32)
-    distribucion.addWidget(proyecto)
-    distribucion.addStretch()
-    metadato = QLabel("LISCHTVAN–LEVEDIEV  /  ESCRITORIO")
-    metadato.setObjectName("metadato")
-    distribucion.addWidget(metadato)
-    barra.addWidget(cuerpo)
-    ventana.addToolBar(barra)
-    ventana.addToolBarBreak()
-    return barra
-
-
 def crear_barra_acciones(ventana):
     barra = QToolBar("Acciones", ventana)
     barra.setObjectName("acciones")
     barra.setMovable(False)
     barra.setFixedHeight(38)
+    titulo = QLabel("Nuevo proyecto")
+    titulo.setObjectName("pestanaProyecto")
+    titulo.setAccessibleName("Proyecto actual")
+    titulo.setMinimumWidth(140)
+    ventana.titulo_proyecto = titulo
+    barra.addWidget(titulo)
+    barra.addSeparator()
     ventana.addToolBar(barra)
     return barra

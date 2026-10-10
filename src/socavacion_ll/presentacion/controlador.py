@@ -3,6 +3,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 from socavacion_ll import __version__
 
+from socavacion_ll.dominio.ejemplo_irregular import proyecto_ejemplo_irregular
 from socavacion_ll.dominio.modelos import proyecto_ejemplo
 from socavacion_ll.infraestructura.proyectos import abrir_proyecto
 from socavacion_ll.infraestructura.reportes import exportar_pdf, exportar_word
@@ -33,7 +34,6 @@ class ControladorVentana:
         resultado = self.sesion.resultado
         self.ventana.pagina_nucleo.mostrar(resultado)
         self.ventana.pagina_resultados.mostrar(resultado)
-        self.ventana.pagina_reportes.mostrar(resultado)
         for nombre in ("Word", "PDF"):
             self.ventana.acciones[nombre].setEnabled(resultado is not None)
 
@@ -54,7 +54,6 @@ class ControladorVentana:
             self._mostrar_error("No se pudo calcular", error)
             return False
         self.actualizar_titulo()
-        self.ventana.navegacion.setCurrentRow(2)
         self.ventana.statusBar().showMessage("Cálculo completado · revisa las advertencias y las fuentes.")
         return True
 
@@ -105,15 +104,20 @@ class ControladorVentana:
             self._cargar_formulario()
 
     def cargar_ejemplo(self):
+        self._cargar_ejemplo(proyecto_ejemplo)
+
+    def cargar_ejemplo_irregular(self):
+        self._cargar_ejemplo(proyecto_ejemplo_irregular)
+
+    def _cargar_ejemplo(self, fabrica):
         if confirmar_cambios(self.ventana, self.guardar):
-            self.sesion.nuevo(proyecto_ejemplo())
+            self.sesion.nuevo(fabrica())
             self._cargar_formulario()
 
     def _cargar_formulario(self):
         self.ingreso.cargar(self.sesion.proyecto)
         self.mostrar_resultado()
         self.actualizar_titulo()
-        self.ventana.navegacion.setCurrentRow(0)
 
     def exportar(self, formato):
         resultado = self.sesion.resultado

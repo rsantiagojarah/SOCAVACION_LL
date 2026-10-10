@@ -1,16 +1,15 @@
 """Formulario editable para proyectos rectangulares o irregulares."""
 import math
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDialog, QFormLayout, QFrame, QHBoxLayout, QLineEdit,
-    QPlainTextEdit, QPushButton, QSpinBox, QVBoxLayout,
+    QPlainTextEdit, QPushButton, QSizePolicy, QSpinBox, QVBoxLayout,
 )
 
-from socavacion_ll import __version__
-from socavacion_ll.calculo.coeficientes import TABLA_Z
+from socavacion_ll.calculo.coeficientes import TABLA_Z, dm_en_tramo_z
 from socavacion_ll.dominio.modelos import Proyecto
-from .campos_ingreso import GRUPOS, TEXTOS
+from .campos_ingreso import AYUDAS, GRUPOS, TEXTOS, texto_numero
 from .componentes import PaginaBase, etiqueta
 from .consulta_tablas import ConsultaTablas
 from .granulometria import DialogoGranulometria
@@ -18,54 +17,50 @@ from .seccion_irregular import DialogoSeccionIrregular
 
 class PaginaIngreso(PaginaBase):
     cambiado = Signal()
-
     def __init__(self):
-        super().__init__("Ingreso de datos", "Un proyecto por escenario. Unidades SI; Dm en mm.")
+        super().__init__(compacto=True)
         self.campos = {}
         self._cargando = False
         self.puntos_terreno = ()
-        self.sin_obstaculos = QCheckBox("Sin obstáculos en el cauce")
+        self.sin_obstaculos = QCheckBox("Sin obstáculos")
+        self.sin_obstaculos.setToolTip("Sin obstáculos: mu = 1 y L no participa.")
         self.ayuda_luz = etiqueta("")
-        self.sin_obstaculos.toggled.connect(self._actualizar_luz)
-        self.sin_obstaculos.toggled.connect(self._notificar)
-        self.distribucion.addWidget(etiqueta(
-            f"VERSIÓN {__version__} · Sección rectangular o irregular de una rama mojada. "
-            "Suelo granular homogéneo, agua clara y método LL.", "aviso",
-        ))
+        self.sin_obstaculos.toggled.connect(lambda m: (self._actualizar_luz(m), self._notificar()))
         for inicio in (0, 2):
             horizontal = QHBoxLayout()
-            horizontal.setSpacing(14)
+            horizontal.setSpacing(8)
             for titulo, campos in GRUPOS[inicio:inicio + 2]:
-                horizontal.addWidget(self._grupo(titulo, campos))
+                horizontal.addWidget(self._grupo(titulo, campos), 1)
             self.distribucion.addLayout(horizontal)
         self.distribucion.addWidget(self._controles_seccion())
-        self.no_cohesivo = QCheckBox(
-            "Confirmo material homogéneo no cohesivo según estudio geotécnico"
-        )
-        self.agua_clara = QCheckBox("Agua clara (única condición habilitada)")
+        self.no_cohesivo = QCheckBox("No cohesivo homogéneo")
+        self.no_cohesivo.setToolTip("Confirmo material homogéneo no cohesivo según el estudio.")
+        self.agua_clara = QCheckBox("Agua clara")
+        self.agua_clara.setToolTip("Única condición habilitada: phi = 1.")
+        fila = QHBoxLayout()
         for control in (self.no_cohesivo, self.agua_clara):
             control.toggled.connect(self._notificar)
-            self.distribucion.addWidget(control)
-        self.boton_tablas = QPushButton("Consultar tablas beta / z / mu y fuentes")
+            fila.addWidget(control)
+        self.boton_tablas = QPushButton("Tablas")
+        self.boton_tablas.setToolTip("Consultar beta, z, mu y sus fuentes, sin modificar datos.")
         self.boton_tablas.clicked.connect(self._consultar_tablas)
-        self.distribucion.addWidget(self.boton_tablas)
-        self.distribucion.addWidget(etiqueta(
-            "T admitidos: 2, 5, 10, 20, 50, 100, 500, 1000 años. "
-            "Dm debe corresponder a su tabla; mu interpola solo L. No confundir Dm con D50. "
-            "El nivel del agua proviene del estudio hidráulico. Se admite coma o punto decimal."
-        ))
-        self.distribucion.addStretch()
+        fila.addWidget(self.boton_tablas)
+        self.distribucion.addLayout(fila)
+        self.distribucion.setAlignment(Qt.AlignmentFlag.AlignTop)
         self.cargar(Proyecto())
 
     def _grupo(self, titulo, campos):
         tarjeta = QFrame()
         tarjeta.setObjectName("tarjeta")
         vertical = QVBoxLayout(tarjeta)
-        vertical.setContentsMargins(14, 10, 14, 14)
+        vertical.setContentsMargins(8, 4, 8, 6)
+        vertical.setAlignment(Qt.AlignmentFlag.AlignTop)
         vertical.addWidget(etiqueta(titulo, "grupo"))
         formulario = QFormLayout()
-        formulario.setHorizontalSpacing(12)
-        formulario.setVerticalSpacing(9)
+        formulario.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
+        formulario.setLabelAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        formulario.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        formulario.setVerticalSpacing(3)
         for nombre, rotulo in campos:
             if nombre == "numero_puntos":
                 control = QSpinBox()
@@ -73,18 +68,23 @@ class PaginaIngreso(PaginaBase):
                 control.valueChanged.connect(self._notificar)
             elif nombre == "notas":
                 control = QPlainTextEdit()
-                control.setPlaceholderText("Registrar datum vertical y origen de los datos.")
-                control.setMinimumHeight(64)
-                control.setMaximumHeight(90)
+                control.setPlaceholderText("Datum vertical y origen de los datos.")
+                control.setFixedHeight(44)
                 control.textChanged.connect(self._notificar)
             else:
                 control = QLineEdit()
                 control.textChanged.connect(self._notificar)
             control.setAccessibleName(rotulo)
+            if nombre in AYUDAS:
+                control.setToolTip(AYUDAS[nombre])
+            if nombre != "notas":
+                control.setFixedHeight(24)
+                control.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.campos[nombre] = control
             formulario.addRow(rotulo, control)
             if nombre == "diametro_medio_mm":
-                self.boton_granulometria = QPushButton("Obtener Dm desde fracciones…")
+                self.boton_granulometria = QPushButton("Dm por tamices")
+                self.boton_granulometria.setToolTip("Calcular Dm desde aberturas o marcas de clase.")
                 self.ayuda_granulometria = etiqueta("")
                 self.boton_granulometria.clicked.connect(self._calcular_granulometria)
                 formulario.addRow(self.boton_granulometria)
@@ -99,6 +99,7 @@ class PaginaIngreso(PaginaBase):
         tarjeta = QFrame()
         tarjeta.setObjectName("tarjeta")
         horizontal = QHBoxLayout(tarjeta)
+        horizontal.setContentsMargins(8, 4, 8, 4)
         self.tipo_seccion = QComboBox()
         self.tipo_seccion.addItem("Rectangular", "rectangular")
         self.tipo_seccion.addItem("Irregular por franjas", "irregular")
@@ -145,7 +146,10 @@ class PaginaIngreso(PaginaBase):
             )
 
     def _actualizar_ayuda_dm(self, valor):
-        texto = "" if valor in TABLA_Z else "Dm no tabulado para z: calcular Dm no habilita LL."
+        texto = "" if valor in TABLA_Z else (
+            "Dm sin celda de z: se usa la fórmula logarítmica aprobada, dentro de 0.05 a 750 mm."
+            if dm_en_tramo_z(valor) else
+            "Dm fuera de 0.05 a 750 mm: no se extrapola z y LL no calcula.")
         self.ayuda_granulometria.setText(texto)
 
     def _actualizar_tipo(self, *_):
@@ -163,7 +167,7 @@ class PaginaIngreso(PaginaBase):
 
     def establecer_importacion_hec_ras(self, puntos, cota_agua_m, notas):
         self._cargando = True
-        self.campos["cota_agua_m"].setText(repr(cota_agua_m))
+        self.campos["cota_agua_m"].setText(texto_numero("cota_agua_m", cota_agua_m))
         self.campos["notas"].setPlainText(notas)
         self._cargando = False
         self.establecer_puntos_terreno(puntos)
@@ -189,7 +193,8 @@ class PaginaIngreso(PaginaBase):
         dialogo = DialogoGranulometria(self.campos["notas"].toPlainText(), self)
         if dialogo.exec() == QDialog.DialogCode.Accepted:
             self._cargando = True
-            self.campos["diametro_medio_mm"].setText(repr(dialogo.diametro_medio_mm))
+            texto_dm = dialogo.texto_dm or repr(dialogo.diametro_medio_mm)
+            self.campos["diametro_medio_mm"].setText(texto_dm)
             self.campos["notas"].setPlainText(dialogo.notas_actualizadas)
             self._actualizar_ayuda_dm(dialogo.diametro_medio_mm)
             self._cargando = False
@@ -206,7 +211,7 @@ class PaginaIngreso(PaginaBase):
                 elif nombre == "notas":
                     campo.setPlainText(valor)
                 else:
-                    campo.setText(str(valor))
+                    campo.setText(valor if nombre in TEXTOS else texto_numero(nombre, valor))
             for nombre in ("no_cohesivo", "agua_clara", "sin_obstaculos"):
                 getattr(self, nombre).setChecked(getattr(proyecto, nombre))
             self.puntos_terreno = proyecto.puntos_terreno

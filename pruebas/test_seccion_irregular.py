@@ -10,6 +10,7 @@ import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from socavacion_ll.dominio import modelos
+from socavacion_ll.dominio.ejemplo_irregular import proyecto_ejemplo_irregular
 from socavacion_ll.dominio.modelos import proyecto_ejemplo
 from socavacion_ll.dominio.validacion import validar_estructura
 from socavacion_ll.infraestructura.proyectos import abrir_proyecto, guardar_proyecto
@@ -222,6 +223,23 @@ class PruebasCalculoIrregular(unittest.TestCase):
         self.assertEqual(base.alpha, contraido.alpha)
         esperado = (base.puntos[0].caudal_unitario_m2s / (.68 * .5)) ** (1 / 1.4)
         self.assertAlmostEqual(contraido.puntos[0].profundidad_hs_m, esperado, places=12)
+
+    def test_ejemplo_terreno_variable_una_rama_y_velocidad_coincidente(self):
+        proyecto = proyecto_ejemplo_irregular()
+        cotas = [punto.cota_m for punto in proyecto.puntos_terreno]
+        self.assertGreater(len(cotas), 3)
+        self.assertGreater(cotas[0], proyecto.cota_agua_m)
+        self.assertGreater(cotas[-1], proyecto.cota_agua_m)
+        self.assertTrue(any(
+            cotas[indice - 1] < cotas[indice] > cotas[indice + 1]
+            for indice in range(1, len(cotas) - 1)
+        ))
+        resultado = calcular_proyecto(proyecto)
+        profundidades = [punto.profundidad_hs_m for punto in resultado.puntos]
+        self.assertGreater(max(profundidades) - min(profundidades), 2)
+        self.assertAlmostEqual(resultado.velocidad_control_m_s, proyecto.velocidad_m_s, places=9)
+        self.assertLess(resultado.error_refinamiento_relativo, 1e-3)
+        self.assertFalse(any("difiere de Q/A" in aviso for aviso in resultado.advertencias))
 
 if __name__ == "__main__":
     unittest.main()

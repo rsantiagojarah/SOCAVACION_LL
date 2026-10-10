@@ -36,7 +36,6 @@ def comprobar_instalacion(directorio):
         ventana.sesion.calcular()
         ventana.controlador.mostrar_resultado()
         ventana.controlador.actualizar_titulo()
-        ventana.navegacion.setCurrentRow(2)
         resultado = ventana.sesion.resultado
         profundidad = resultado.puntos[0].profundidad_hs_m
         if not math.isclose(profundidad, 4.736513861635, rel_tol=0, abs_tol=1e-9):

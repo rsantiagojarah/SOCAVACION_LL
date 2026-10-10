@@ -82,14 +82,23 @@ class PruebasReportes(unittest.TestCase):
                 self.assertIn("m:oMath", xml)
                 self.assertIn("<m:f>", xml)
                 self.assertIn("<m:sSup>", xml)
-                self.assertIn("<m:d>", xml)
+                self.assertIn("Arial Narrow", xml)
                 arbol = ElementTree.fromstring(xml)
                 espacio = {"m": "http://schemas.openxmlformats.org/officeDocument/2006/math"}
                 formulas = arbol.findall(".//m:oMath", espacio)
-                self.assertEqual(len(formulas[1].findall(".//m:f", espacio)), 2)
-                self.assertEqual(len(formulas[2].findall(".//m:f", espacio)), 3)
-                self.assertEqual(len(formulas[2].findall(".//m:sSup", espacio)), 3)
-                self.assertEqual(len(formulas[2].findall(".//m:d", espacio)), 1)
+
+                def texto_formula(formula):
+                    return "".join(nodo.text or "" for nodo in formula.findall(".//m:t", espacio))
+
+                fracciones = [len(formula.findall(".//m:f", espacio)) for formula in formulas]
+                self.assertIn(2, fracciones)
+                hs = next(formula for formula in formulas
+                          if "0.68" in texto_formula(formula)
+                          and len(formula.findall(".//m:f", espacio)) >= 3)
+                self.assertEqual(len(hs.findall(".//m:sSup", espacio)), 3)
+                for texto in ("Donde:", "Reemplazando los valores correspondientes:",
+                              "Por lo tanto", "Referencia normativa"):
+                    self.assertIn(texto, xml)
                 self.assertIn("Río &lt;alto&gt; &amp; Peña", xml)
                 self.assertIn("FIN NOTAS", xml)
                 self.assertIn("tblHeader", xml)
@@ -157,6 +166,7 @@ class PruebasReportes(unittest.TestCase):
             paginas = lector.pages
             texto = "\n".join(pagina.extract_text() for pagina in paginas)
             notas = texto.split("Notas: ", 1)[1].split("Datos de entrada y geometría", 1)[0]
+            notas = notas.replace("MEMORIA DE CÁLCULO · SOCAVACIÓN", "").replace("INGENIERÍA HIDRÁULICA", "")
             self.assertEqual(notas.count("N"), 20000)
             self.assertEqual(lector.metadata.author, "R" * 500)
             self.assertGreater(len(paginas), 4)

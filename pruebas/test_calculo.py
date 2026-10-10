@@ -28,9 +28,12 @@ class PruebasCoeficientes(unittest.TestCase):
         for periodo, esperado in ((2, .82), (5, .86), (10, .90), (20, .94),
                                   (50, .97), (100, 1), (500, 1.05), (1000, 1.07)):
             self.assertEqual(obtener_beta(periodo), esperado)
-        for periodo in (1, 25, 2000, math.nan, True, 10 ** 1000):
+        for periodo in (1, 2000, math.nan, True, 10 ** 1000):
             with self.subTest(periodo=periodo), self.assertRaises(ValueError):
                 obtener_beta(periodo)
+        logaritmo = math.log10(25)
+        self.assertEqual(obtener_beta(25), 0.7929 + 0.0973 * logaritmo)
+        self.assertNotEqual(obtener_beta(100), 0.7929 + 0.0973 * math.log10(100))
 
     def test_z_literal_no_exponente_inverso(self):
         diametros = (.05, .15, .5, 1, 1.5, 2.5, 4, 6, 8, 10, 15, 20,
@@ -39,9 +42,14 @@ class PruebasCoeficientes(unittest.TestCase):
                    .31, .30, .29, .28, .27, .26, .25, .24, .23, .22, .21, .20)
         for diametro, esperado in zip(diametros, valores):
             self.assertEqual(obtener_z(diametro), esperado)
-        for diametro in (.01, .64, 1000, math.inf, True):
+        for diametro in (.01, 1000, math.inf, True):
             with self.subTest(diametro=diametro), self.assertRaises(ValueError):
                 obtener_z(diametro)
+        for diametro in (.64, 12.503):
+            logaritmo = math.log10(diametro)
+            esperado = 0.394557 - 0.04136 * logaritmo - 0.00891 * logaritmo ** 2
+            self.assertEqual(obtener_z(diametro), esperado)
+        self.assertEqual(obtener_z(10), .34)
 
     def test_mu_celdas_y_condiciones_literales(self):
         self.assertEqual(obtener_mu(True, 2, 0), 1)
@@ -144,8 +152,8 @@ class PruebasCalculo(unittest.TestCase):
     def test_entradas_invalidas_no_producen_resultado(self):
         casos = dict(caudal_m3s=(0, -1, math.nan, True, "120", 10 ** 1000),
                      ancho_m=(0, -1, math.inf), velocidad_m_s=(0, -2),
-                     pendiente_m_m=(-.1, math.nan), diametro_medio_mm=(0, .64),
-                     periodo_retorno_anios=(25,), cota_agua_m=(100, 99, math.nan),
+                     pendiente_m_m=(-.1, math.nan), diametro_medio_mm=(0, .01, 1000),
+                     periodo_retorno_anios=(1, 2000), cota_agua_m=(100, 99, math.nan),
                      no_cohesivo=(False, 1), agua_clara=(False,),
                      numero_puntos=(1, 202, 2.5, True), nombre=("", 3))
         for campo, valores in casos.items():

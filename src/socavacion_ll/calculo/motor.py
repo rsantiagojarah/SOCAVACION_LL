@@ -3,7 +3,7 @@ import math
 
 from ..dominio.modelos import Proyecto, PuntoResultado, Resultado
 from ..dominio.validacion import validar_proyecto
-from .coeficientes import obtener_beta, obtener_z, seleccionar_mu
+from .coeficientes import seleccionar_beta, seleccionar_mu, seleccionar_z
 from .geometria_irregular import formar_franjas
 from .irregular import evaluar_franjas
 
@@ -16,6 +16,9 @@ FUENTES = (
     "Schreider et al. (2001), ecuación 1, p. 16: alpha rectangular.",
     "Complementaria: docs/complementarias/DGA_2022_Cachapoal_SIT527.pdf, "
     "impresas 68-69/PDF 78-79: reparto por franjas, beta y z; no es norma MTC.",
+    "Fórmula de usuario, no publicada en esas tablas, solo entre sus extremos: "
+    "beta = 0.7929 + 0.0973*log10(T); "
+    "z = 0.394557 - 0.04136*log10(Dm) - 0.00891*(log10(Dm))^2.",
 )
 TOLERANCIA_REFINAMIENTO = 1e-3
 
@@ -32,15 +35,25 @@ def _positivo_finito(valor: float, nombre: str) -> float:
 
 def _advertencias(
     proyecto: Proyecto, velocidad: float, detalle_mu: str, interpolado: bool,
-    puntos: tuple[PuntoResultado, ...],
+    puntos: tuple[PuntoResultado, ...], formula_beta: bool, formula_z: bool,
 ) -> list[str]:
     tipo = "irregular por franjas" if proyecto.tipo_seccion == "irregular" else "rectangular"
     avisos = [
         f"Sección {tipo}, lecho homogéneo no cohesivo y agua clara (phi=1).",
         "Socavación general LL: no es socavación total ni determina la cimentación.",
         "La pendiente se conserva como antecedente; el nivel de agua es un dato externo.",
-        "Beta y z proceden de una fuente complementaria, no de tablas MTC.",
+        "Beta y z de celda publicada proceden de una fuente complementaria, no de tablas MTC.",
     ]
+    if formula_beta:
+        avisos.append(
+            "T no tiene celda de beta: se usó la fórmula logarítmica aprobada por el usuario. "
+            "No sustituye la tabla DGA ni se extrapola fuera de 2 a 1000 años."
+        )
+    if formula_z:
+        avisos.append(
+            "Dm no tiene celda de z: se usó la fórmula logarítmica aprobada por el usuario. "
+            "No sustituye la tabla DGA ni se extrapola fuera de 0.05 a 750 mm."
+        )
     if not math.isclose(proyecto.velocidad_m_s, velocidad, rel_tol=1e-6, abs_tol=0):
         avisos.append(
             "La velocidad ingresada difiere de Q/A; revise la hidráulica. Para mu se "
@@ -61,7 +74,8 @@ def _advertencias(
 
 def _calcular_rectangular(
     proyecto: Proyecto, beta: float, mu: float, z: float, detalle_mu: str,
-    interpolado: bool,
+    interpolado: bool, detalle_beta: str, detalle_z: str, formula_beta: bool,
+    formula_z: bool,
 ) -> Resultado:
     try:
         tirante = proyecto.cota_agua_m - proyecto.cota_fondo_m
@@ -86,17 +100,21 @@ def _calcular_rectangular(
         proyecto.ancho_m * indice / (proyecto.numero_puntos - 1),
         proyecto.cota_fondo_m, tirante, profundidad, socavacion, cota_ll, cota_perfil,
     ) for indice in range(proyecto.numero_puntos))
-    avisos = _advertencias(proyecto, velocidad, detalle_mu, interpolado, puntos)
+    avisos = _advertencias(
+        proyecto, velocidad, detalle_mu, interpolado, puntos, formula_beta, formula_z,
+    )
     return Resultado(
         proyecto, alpha, beta, mu, 1.0, z, area, tirante, velocidad,
         numerador, denominador, exponente, puntos, tuple(avisos), FUENTES,
-        detalle_mu, "rectangular", proyecto.ancho_m,
+        detalle_mu, "rectangular", proyecto.ancho_m, detalle_beta=detalle_beta,
+        detalle_z=detalle_z,
     )
 
 
 def _calcular_irregular(
     proyecto: Proyecto, beta: float, mu: float, z: float, detalle_mu: str,
-    interpolado: bool,
+    interpolado: bool, detalle_beta: str, detalle_z: str, formula_beta: bool,
+    formula_z: bool,
 ) -> Resultado:
     base = formar_franjas(
         proyecto.puntos_terreno, proyecto.cota_agua_m, proyecto.numero_franjas,
@@ -114,6 +132,7 @@ def _calcular_irregular(
     velocidad = _positivo_finito(proyecto.caudal_m3s / evaluacion.area_m2, "Velocidad Q/A")
     avisos = _advertencias(
         proyecto, velocidad, detalle_mu, interpolado, evaluacion.puntos,
+        formula_beta, formula_z,
     )
     avisos.append(
         "Reparto por franjas con K=1 según fuente DGA/MOP complementaria; alpha se "
@@ -131,19 +150,22 @@ def _calcular_irregular(
         primero.caudal_unitario_m2s, evaluacion.denominador, evaluacion.exponente,
         evaluacion.puntos, tuple(avisos), FUENTES, detalle_mu, "irregular",
         evaluacion.ancho_mojado_m, len(refinadas), evaluacion.cierre_caudal_m3s,
-        error, evaluacion.suma_reparto,
+        error, evaluacion.suma_reparto, detalle_beta=detalle_beta, detalle_z=detalle_z,
     )
 
 
 def calcular_proyecto(proyecto: Proyecto) -> Resultado:
     """Devolver una evaluación inmutable o ValueError, sin IO ni estado compartido."""
     validar_proyecto(proyecto)
-    beta = obtener_beta(proyecto.periodo_retorno_anios)
-    z = obtener_z(proyecto.diametro_medio_mm)
+    beta = seleccionar_beta(proyecto.periodo_retorno_anios)
+    z = seleccionar_z(proyecto.diametro_medio_mm)
     seleccion = seleccionar_mu(
         proyecto.sin_obstaculos, proyecto.velocidad_m_s, proyecto.luz_libre_m,
     )
-    argumentos = (proyecto, beta, seleccion.valor, z, seleccion.detalle, seleccion.interpolado)
+    argumentos = (
+        proyecto, beta.valor, seleccion.valor, z.valor, seleccion.detalle,
+        seleccion.interpolado, beta.detalle, z.detalle, beta.por_formula, z.por_formula,
+    )
     if proyecto.tipo_seccion == "irregular":
         return _calcular_irregular(*argumentos)
     return _calcular_rectangular(*argumentos)

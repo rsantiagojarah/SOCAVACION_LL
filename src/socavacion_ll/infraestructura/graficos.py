@@ -41,7 +41,7 @@ def crear_figura(resultado: Resultado, oscuro: bool = False) -> Figure:
         borde.set_color(texto)
         borde.set_alpha(0.3)
     ejes.grid(alpha=0.18, color=texto)
-    ejes.margins(x=0.03, y=0.25)
+    ejes.margins(x=0.02, y=0.08)
     leyenda = ejes.legend(loc="best", fontsize=8, facecolor=fondo, edgecolor=fondo)
     for rotulo in leyenda.get_texts():
         rotulo.set_color(texto)

@@ -71,6 +71,8 @@ class Resultado:
     cierre_caudal_m3s: float = 0.0
     error_refinamiento_relativo: float = 0.0
     suma_reparto: float = 0.0
+    detalle_beta: str = ""
+    detalle_z: str = ""
 
 
 def proyecto_ejemplo() -> Proyecto:

@@ -12,8 +12,9 @@ Los ejemplos publicados con V=2 m/s mantienen sus resultados.
 
 ## Abrir la interfaz
 
-En Windows, abrir `Abrir Socavacion.cmd` con doble clic.
-El lanzador utiliza exclusivamente el entorno `.venv` de este proyecto.
+En Windows, abrir `Abrir Socavacion.vbs` con doble clic.
+Ese acceso arranca un solo `pythonw.exe` y muestra la ventana del programa.
+Usa el entorno `.venv` de este proyecto.
 No inicia ni depende de Metrados, AutoCAD, Rust o una base de datos.
 
 Si el entorno aún no está preparado, desde PowerShell en esta carpeta:
@@ -28,7 +29,7 @@ El primer comando crea un entorno Python local; el segundo descarga la bibliotec
 gráfica y las dependencias de cálculo/reportes; el tercero abre la ventana.
 La descarga inicial necesita Internet. En otro equipo, recrear `.venv`, no copiarlo.
 La versión 0.5.0 se entrega para ejecutarse desde este proyecto con
-`Abrir Socavacion.cmd` o con el Python de `.venv`. No se entrega como aplicación portable.
+`Abrir Socavacion.vbs` o con el Python de `.venv`. No se entrega como aplicación portable.
 
 ## Qué funciona
 

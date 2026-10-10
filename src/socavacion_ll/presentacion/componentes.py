@@ -56,16 +56,19 @@ def crear_tabla(encabezados, filas):
 class PaginaBase(QScrollArea):
     """El desplazamiento evita recortar formularios al reducir la ventana."""
 
-    def __init__(self, titulo, descripcion):
+    def __init__(self, titulo="", descripcion="", compacto=False):
         super().__init__()
         self.setWidgetResizable(True)
         contenido = QWidget()
         contenido.setObjectName("contenidoPagina")
         self.distribucion = QVBoxLayout(contenido)
-        self.distribucion.setContentsMargins(20, 16, 20, 16)
-        self.distribucion.setSpacing(12)
-        self.distribucion.addWidget(etiqueta(titulo, "titulo"))
-        self.distribucion.addWidget(etiqueta(descripcion))
+        margen = 8 if compacto else 20
+        self.distribucion.setContentsMargins(margen, 6 if compacto else 16, margen, margen)
+        self.distribucion.setSpacing(6 if compacto else 12)
+        if titulo:
+            self.distribucion.addWidget(etiqueta(titulo, "titulo"))
+        if descripcion:
+            self.distribucion.addWidget(etiqueta(descripcion))
         self.setWidget(contenido)
 
     def agregar_estado(self, titulo, detalle):

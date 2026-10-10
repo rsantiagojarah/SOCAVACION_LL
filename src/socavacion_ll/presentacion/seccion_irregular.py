@@ -6,6 +6,7 @@ from PySide6.QtWidgets import (
     QTableWidget, QTableWidgetItem, QVBoxLayout,
 )
 
+from socavacion_ll.dominio.ejemplo_irregular import PERFIL_EJEMPLO_IRREGULAR
 from socavacion_ll.dominio.modelos import PuntoTerreno
 from socavacion_ll.infraestructura.hec_ras_xlsx import leer_seccion_hec_ras
 from .componentes import etiqueta
@@ -22,7 +23,8 @@ class DialogoSeccionIrregular(QDialog):
         vertical = QVBoxLayout(self)
         vertical.addWidget(etiqueta(
             "Ingrese abscisa x y cota del terreno en orden no decreciente. "
-            "Se admiten tramos verticales; el terreno es lineal entre puntos."
+            "Se admiten tramos verticales; el terreno es lineal entre puntos. "
+            "El perfil ejemplo asume la cota de agua 103 m: bermas secas y una rama mojada."
         ))
         self.tabla = QTableWidget(0, 2)
         self.tabla.setHorizontalHeaderLabels(("Abscisa x (m)", "Cota (m)"))
@@ -89,7 +91,7 @@ class DialogoSeccionIrregular(QDialog):
             self.tabla.removeRow(fila)
 
     def _ejemplo(self):
-        self._cargar((PuntoTerreno(0, 104), PuntoTerreno(10, 100), PuntoTerreno(20, 104)))
+        self._cargar(PERFIL_EJEMPLO_IRREGULAR)
 
     def _cargar(self, puntos):
         self.tabla.setRowCount(0)

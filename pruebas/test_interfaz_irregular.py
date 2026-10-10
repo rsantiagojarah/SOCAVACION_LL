@@ -8,8 +8,10 @@ import unittest
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QPushButton
+from socavacion_ll.dominio.ejemplo_irregular import PERFIL_EJEMPLO_IRREGULAR
 from socavacion_ll.dominio.modelos import PuntoTerreno, proyecto_ejemplo
+from socavacion_ll.presentacion.seccion_irregular import DialogoSeccionIrregular
 from socavacion_ll.presentacion.ventana import VentanaPrincipal
 
 
@@ -56,6 +58,26 @@ class PruebasInterfazIrregular(unittest.TestCase):
         pagina.establecer_puntos_terreno((PuntoTerreno(0, 104), PuntoTerreno(10, 100)))
         self.assertTrue(self.ventana.sesion.modificado)
         self.assertFalse(self.ventana.acciones["PDF"].isEnabled())
+
+    def test_ejemplo_variable_carga_quince_puntos_y_calcula(self):
+        self.ventana.acciones["Variable"].trigger()
+        self.aplicacion.processEvents()
+        pagina = self.ventana.pagina_ingreso
+        self.assertEqual(pagina.tipo_seccion.currentData(), "irregular")
+        self.assertEqual(pagina.puntos_terreno, PERFIL_EJEMPLO_IRREGULAR)
+        self.assertIn("15 puntos", pagina.boton_seccion.text())
+        self.assertTrue(self.ventana.controlador.calcular())
+        self.assertEqual(self.ventana.sesion.resultado.tipo_seccion, "irregular")
+
+    def test_boton_de_perfil_ejemplo_reemplaza_el_triangulo(self):
+        dialogo = DialogoSeccionIrregular(())
+        boton = next(
+            candidato for candidato in dialogo.findChildren(QPushButton)
+            if candidato.text() == "Cargar perfil ejemplo"
+        )
+        boton.click()
+        self.assertEqual(dialogo.obtener_puntos(), PERFIL_EJEMPLO_IRREGULAR)
+        dialogo.deleteLater()
 
 
 if __name__ == "__main__":

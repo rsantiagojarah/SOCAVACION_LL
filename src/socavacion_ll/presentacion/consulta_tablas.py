@@ -18,7 +18,9 @@ class ConsultaTablas(QDialog):
         vertical = QVBoxLayout(self)
         vertical.addWidget(etiqueta(
             "Consulta de solo lectura. No aplica valores al proyecto. "
-            "Beta/z requieren celda exacta. Mu interpola linealmente solo L, sin extrapolar."
+            "Una celda de beta o z se usa tal cual. Entre sus extremos, un valor sin celda "
+            "usa la fórmula logarítmica aprobada; fuera de ellos no se extrapola. "
+            "Mu interpola linealmente solo L."
         ))
         self.pestanas = QTabWidget()
         vertical.addWidget(self.pestanas)
@@ -30,13 +32,17 @@ class ConsultaTablas(QDialog):
         self._agregar(
             "beta", "beta · Frecuencia", ("T (años)", "beta"),
             [(f"{periodo:g}", f"{valor:.2f}") for periodo, valor in TABLA_BETA.items()],
-            complemento + "Tabla 7-1. Se requiere T exacto.",
+            complemento + "Tabla 7-1. La celda exacta prevalece. Entre 2 y 1000 años, "
+            "si T no coincide con una celda: beta = 0.7929 + 0.0973*log10(T). "
+            "Fórmula aprobada por el usuario; no se extrapola.",
         )
         self._agregar(
             "z", "z · Diámetro", ("Dm (mm)", "z (X en la fuente)"),
             [(f"{diametro:g}", f"{valor:.2f}") for diametro, valor in TABLA_Z.items()],
-            complemento + "Tabla 7-2. Se requiere Dm exacto; Dm no equivale a D50. "
-            "z es el exponente tabulado, no 1/(1+z).",
+            complemento + "Tabla 7-2. La celda exacta prevalece; Dm no equivale a D50. "
+            "z tabulado no es 1/(1+z). Entre 0.05 y 750 mm, si Dm no coincide con una celda: "
+            "z = 0.394557 - 0.04136*log10(Dm) - 0.00891*(log10(Dm))^2. "
+            "Fórmula aprobada por el usuario; no se extrapola.",
         )
         self._agregar(
             "mu", "mu · Contracción", ("V (m/s) / L (m)", *map(str, LUCES_M)),

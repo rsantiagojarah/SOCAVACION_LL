@@ -41,14 +41,13 @@ class PruebasInterfaz(unittest.TestCase):
         self.assertEqual(self.aplicacion.font().family(), "Segoe UI")
         self.assertEqual(self.aplicacion.font().pixelSize(), 11)
 
-    def test_navegacion_sin_calculos_simulados(self):
-        self.assertEqual(self.ventana.paginas.count(), 4)
-        for indice in range(4):
-            with self.subTest(fase=indice):
-                self.ventana.navegacion.setCurrentRow(indice)
-                self.aplicacion.processEvents()
-                self.assertEqual(self.ventana.paginas.currentIndex(), indice)
-                self.assertIn("Proyecto", self.ventana.statusBar().currentMessage())
+    def test_datos_y_resultados_visibles_en_la_misma_ventana(self):
+        self.ventana.resize(1360, 720)
+        self.aplicacion.processEvents()
+        self.assertTrue(self.ventana.pagina_ingreso.isVisible())
+        self.assertTrue(self.ventana.pagina_resultados.isVisible())
+        self.assertTrue(self.ventana.pagina_nucleo.isVisible())
+        self.assertFalse(hasattr(self.ventana, "navegacion"))
         self.assertIn("Sin resultados", self.ventana.pagina_resultados.estado.text())
 
     def test_acciones_de_proyecto_activas_y_reportes_sin_calculo_bloqueados(self):
@@ -57,8 +56,7 @@ class PruebasInterfaz(unittest.TestCase):
                 self.assertTrue(self.ventana.acciones[nombre].isEnabled())
         for nombre in ("Word", "PDF"):
             self.assertFalse(self.ventana.acciones[nombre].isEnabled())
-        self.ventana.acciones["Resultados"].trigger()
-        self.assertEqual(self.ventana.paginas.currentIndex(), 2)
+        self.assertNotIn("Resultados", self.ventana.acciones)
 
     def test_entradas_editables_y_resultados_solo_lectura(self):
         campos = self.ventana.pagina_ingreso.findChildren(QLineEdit)
@@ -71,11 +69,12 @@ class PruebasInterfaz(unittest.TestCase):
                 self.assertFalse(tabla.item(fila, columna).flags() & Qt.ItemFlag.ItemIsEditable)
 
     def test_paneles_y_tamanos_compactos(self):
-        self.assertEqual(self.ventana.cabecera.height(), 34)
+        self.assertFalse(hasattr(self.ventana, "cabecera"))
         self.assertEqual(self.ventana.barra_acciones.height(), 38)
         self.assertEqual(self.ventana.statusBar().height(), 24)
-        self.ventana.resize(1000, 640)
+        self.ventana.resize(1360, 720)
         self.aplicacion.processEvents()
+        self.assertEqual(self.ventana.divisor.count(), 2)
         self.assertTrue(all(ancho > 0 for ancho in self.ventana.divisor.sizes()))
 
     def test_modulos_maximo_250_lineas_y_sin_dependencia_metrados(self):
@@ -86,15 +85,13 @@ class PruebasInterfaz(unittest.TestCase):
                 self.assertNotIn("from metrado", contenido)
                 self.assertNotIn("import metrado", contenido)
 
-    def test_textos_de_banda_caben_en_tamano_minimo(self):
-        self.ventana.resize(1000, 640)
-        for indice in range(4):
-            self.ventana.navegacion.setCurrentRow(indice)
-            self.aplicacion.processEvents()
-            rotulo = self.ventana.etiqueta_fase
-            self.assertFalse(rotulo.wordWrap())
-            ancho_texto = QFontMetrics(rotulo.font()).horizontalAdvance(rotulo.text())
-            self.assertLessEqual(ancho_texto, rotulo.width())
+    def test_titulo_de_proyecto_cabe_en_la_barra(self):
+        self.ventana.resize(1360, 720)
+        self.aplicacion.processEvents()
+        rotulo = self.ventana.titulo_proyecto
+        self.assertFalse(rotulo.wordWrap())
+        ancho_texto = QFontMetrics(rotulo.font()).horizontalAdvance(rotulo.text())
+        self.assertLessEqual(ancho_texto, rotulo.width())
 
 
 if __name__ == "__main__":

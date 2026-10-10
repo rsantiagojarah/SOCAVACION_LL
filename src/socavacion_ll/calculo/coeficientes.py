@@ -44,21 +44,93 @@ def _numero_positivo(valor: float, nombre: str) -> None:
         raise ValueError(f"{nombre}: se requiere un número finito mayor que cero.")
 
 
-def _seleccionar(tabla: dict[float, float], valor: float, nombre: str) -> float:
-    _numero_positivo(valor, nombre)
-    if valor not in tabla:
-        raise ValueError(f"{nombre}={valor}: no existe celda publicada; no se interpola.")
-    return tabla[valor]
+@dataclass(frozen=True)
+class SeleccionCoeficiente:
+    valor: float
+    detalle: str
+    por_formula: bool
+
+
+def _extremos(tabla: dict[float, float]) -> tuple[float, float]:
+    claves = tuple(tabla)
+    return claves[0], claves[-1]
+
+
+def dm_en_tramo_z(diametro_medio_mm: float) -> bool:
+    """Verdadero si Dm cae entre 0.05 y 750 mm y no es una celda publicada."""
+    if type(diametro_medio_mm) not in (int, float):
+        return False
+    try:
+        finito = math.isfinite(diametro_medio_mm)
+    except OverflowError:
+        return False
+    menor, mayor = _extremos(TABLA_Z)
+    return finito and menor < diametro_medio_mm < mayor and diametro_medio_mm not in TABLA_Z
+
+
+def seleccionar_beta(periodo_retorno_anios: float) -> SeleccionCoeficiente:
+    """Celda literal de la tabla 7-1, o la fórmula de usuario dentro de 2 a 1000 años."""
+    _numero_positivo(periodo_retorno_anios, "Período T (años)")
+    if periodo_retorno_anios in TABLA_BETA:
+        valor = TABLA_BETA[periodo_retorno_anios]
+        return SeleccionCoeficiente(
+            valor,
+            "DGA/MOP 2022, tabla 7-1, p. 69 / PDF 79: "
+            f"T={periodo_retorno_anios:g} años, beta={valor:g}; celda literal.",
+            False,
+        )
+    menor, mayor = _extremos(TABLA_BETA)
+    if not menor < periodo_retorno_anios < mayor:
+        raise ValueError(
+            f"Período T (años)={periodo_retorno_anios}: fuera de {menor:g} a {mayor:g} años; "
+            "no se extrapola.")
+    logaritmo = math.log10(periodo_retorno_anios)
+    valor = 0.7929 + 0.0973 * logaritmo
+    return SeleccionCoeficiente(
+        valor,
+        "Fórmula aprobada por el usuario para T sin celda publicada, "
+        f"dentro de {menor:g} a {mayor:g} años. No es tabla DGA ni norma MTC. "
+        f"beta = 0.7929 + 0.0973*log10({periodo_retorno_anios:g}) = {valor:.12g}.",
+        True,
+    )
+
+
+def seleccionar_z(diametro_medio_mm: float) -> SeleccionCoeficiente:
+    """Celda literal de la tabla 7-2, o la fórmula de usuario dentro de 0.05 a 750 mm."""
+    _numero_positivo(diametro_medio_mm, "Diámetro Dm (mm)")
+    if diametro_medio_mm in TABLA_Z:
+        valor = TABLA_Z[diametro_medio_mm]
+        return SeleccionCoeficiente(
+            valor,
+            "DGA/MOP 2022, tabla 7-2, p. 69 / PDF 79: "
+            f"Dm={diametro_medio_mm:g} mm, z={valor:g}; celda literal. No es 1/(1+z).",
+            False,
+        )
+    menor, mayor = _extremos(TABLA_Z)
+    if not menor < diametro_medio_mm < mayor:
+        raise ValueError(
+            f"Diámetro Dm (mm)={diametro_medio_mm}: fuera de {menor:g} a {mayor:g} mm; "
+            "no se extrapola.")
+    logaritmo = math.log10(diametro_medio_mm)
+    valor = 0.394557 - 0.04136 * logaritmo - 0.00891 * logaritmo ** 2
+    return SeleccionCoeficiente(
+        valor,
+        "Fórmula aprobada por el usuario para Dm sin celda publicada, "
+        f"dentro de {menor:g} a {mayor:g} mm. No es tabla DGA ni norma MTC. "
+        f"z = 0.394557 - 0.04136*log10({diametro_medio_mm:g}) "
+        f"- 0.00891*(log10({diametro_medio_mm:g}))^2 = {valor:.12g}.",
+        True,
+    )
 
 
 def obtener_beta(periodo_retorno_anios: float) -> float:
-    """Seleccionar beta para el período exacto de la tabla complementaria."""
-    return _seleccionar(TABLA_BETA, periodo_retorno_anios, "Período T (años)")
+    """Devolver beta; la celda publicada prevalece sobre la fórmula."""
+    return seleccionar_beta(periodo_retorno_anios).valor
 
 
 def obtener_z(diametro_medio_mm: float) -> float:
-    """Seleccionar z (X en la fuente); no devolver 1/(1+z)."""
-    return _seleccionar(TABLA_Z, diametro_medio_mm, "Diámetro Dm (mm)")
+    """Devolver z, no 1/(1+z); la celda publicada prevalece sobre la fórmula."""
+    return seleccionar_z(diametro_medio_mm).valor
 
 
 def _fila_mu(velocidad_m_s: float) -> str | float:

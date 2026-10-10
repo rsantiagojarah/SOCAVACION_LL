@@ -59,7 +59,9 @@ class PruebasReportesIrregular(unittest.TestCase):
             exportar_pdf(pdf, resultado)
             with ZipFile(word) as archivo:
                 texto_word = archivo.read("word/document.xml").decode("utf-8")
-            self.assertIn("alpha = Q / SUMA", texto_word)
+            self.assertIn("alpha", texto_word)
+            self.assertIn("SUMA", texto_word)
+            self.assertIn("<m:f>", texto_word)
             texto_pdf = "\n".join(p.extract_text() for p in PdfReader(pdf).pages)
             for texto in ("Sección irregular", "Caudal Q_j", "Cierre de caudal", "DGA/MOP"):
                 self.assertIn(texto, texto_word)
